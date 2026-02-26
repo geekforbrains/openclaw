@@ -80,6 +80,8 @@ export function registerCronEditCommand(cron: Command) {
         "--failure-alert-account-id <id>",
         "Account ID for failure alert channel (multi-account setups)",
       )
+      .option("--gate <command>", "Shell command gate; exit 0 = run, non-zero = skip")
+      .option("--clear-gate", "Remove gate from job", false)
       .action(async (id, opts) => {
         try {
           if (opts.session === "main" && opts.message) {
@@ -296,6 +298,16 @@ export function registerCronEditCommand(cron: Command) {
               failureAlert.accountId = accountId ? accountId : undefined;
             }
             patch.failureAlert = failureAlert;
+          }
+
+          if (opts.gate && opts.clearGate) {
+            throw new Error("Use --gate or --clear-gate, not both");
+          }
+          if (typeof opts.gate === "string" && opts.gate.trim()) {
+            patch.gate = opts.gate.trim();
+          }
+          if (opts.clearGate) {
+            patch.gate = null;
           }
 
           const res = await callGatewayFromCli("cron.update", opts, {

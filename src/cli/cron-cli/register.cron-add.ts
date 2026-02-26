@@ -99,6 +99,7 @@ export function registerCronAddCommand(cron: Command) {
       )
       .option("--account <id>", "Channel account id for delivery (multi-account setups)")
       .option("--best-effort-deliver", "Do not fail the job if delivery fails", false)
+      .option("--gate <command>", "Shell command gate; exit 0 = run, non-zero = skip")
       .option("--json", "Output JSON", false)
       .action(async (opts: GatewayRpcOpts & Record<string, unknown>, cmd?: Command) => {
         try {
@@ -224,6 +225,9 @@ export function registerCronAddCommand(cron: Command) {
               ? opts.sessionKey.trim()
               : undefined;
 
+          const gate =
+            typeof opts.gate === "string" && opts.gate.trim() ? opts.gate.trim() : undefined;
+
           const params = {
             name,
             description,
@@ -235,6 +239,7 @@ export function registerCronAddCommand(cron: Command) {
             sessionTarget,
             wakeMode,
             payload,
+            gate,
             delivery: deliveryMode
               ? {
                   mode: deliveryMode,

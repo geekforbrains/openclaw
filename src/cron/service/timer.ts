@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { resolveFailoverReasonFromError } from "../../agents/failover-error.js";
 import type { CronConfig, CronRetryOn } from "../../config/types.cron.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
@@ -106,6 +107,37 @@ function isAbortError(err: unknown): boolean {
     return false;
   }
   return err.name === "AbortError" || err.message === timeoutErrorMessage();
+}
+
+/** Maximum time a gate command is allowed to run before being killed. */
+export const GATE_TIMEOUT_MS = 30_000;
+
+/**
+ * Run a gate command via the shell. Resolves with `{ pass: true }` when the
+ * command exits 0 (job should proceed), or `{ pass: false, reason }` for any
+ * non-zero exit (job should be skipped).
+ */
+export async function runGate(
+  command: string,
+  timeoutMs: number = GATE_TIMEOUT_MS,
+): Promise<{ pass: true } | { pass: false; reason: string }> {
+  return new Promise((resolve) => {
+    const child = execFile("sh", ["-c", command], { timeout: timeoutMs }, (err, stdout, stderr) => {
+      if (!err) {
+        resolve({ pass: true });
+        return;
+      }
+      const output = (stderr || stdout || "").trim();
+      const code = "code" in err && typeof err.code === "number" ? err.code : null;
+      const killed = child.killed || ("killed" in err && err.killed === true);
+      const reason = killed
+        ? `gate timed out after ${timeoutMs}ms`
+        : output
+          ? `gate exited ${code ?? "non-zero"}: ${output.slice(0, 200)}`
+          : `gate exited ${code ?? "non-zero"}`;
+      resolve({ pass: false, reason });
+    });
+  });
 }
 /**
  * Exponential backoff delays (in ms) indexed by consecutive error count.
@@ -1040,6 +1072,15 @@ export async function executeJobCore(
   if (abortSignal?.aborted) {
     return resolveAbortError();
   }
+
+  // Run gate command if configured. Non-zero exit skips the job.
+  if (typeof job.gate === "string" && job.gate.trim()) {
+    const gateResult = await runGate(job.gate);
+    if (!gateResult.pass) {
+      return { status: "skipped", error: gateResult.reason };
+    }
+  }
+
   if (job.sessionTarget === "main") {
     const text = resolveJobPayloadTextForMain(job);
     if (!text) {
