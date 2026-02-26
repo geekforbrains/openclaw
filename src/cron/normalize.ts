@@ -384,6 +384,22 @@ export function normalizeCronJobInput(
     }
   }
 
+  if ("gate" in base) {
+    const gate = base.gate;
+    if (gate === null) {
+      next.gate = null;
+    } else if (typeof gate === "string") {
+      const trimmed = gate.trim();
+      if (trimmed) {
+        next.gate = trimmed;
+      } else {
+        delete next.gate;
+      }
+    } else {
+      delete next.gate;
+    }
+  }
+
   if (isRecord(base.schedule)) {
     next.schedule = coerceSchedule(base.schedule);
   }

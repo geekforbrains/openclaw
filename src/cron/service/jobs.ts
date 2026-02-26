@@ -556,6 +556,7 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
     payload: input.payload,
     delivery: resolveInitialCronDelivery(input),
     failureAlert: input.failureAlert,
+    gate: typeof input.gate === "string" && input.gate.trim() ? input.gate.trim() : undefined,
     state: {
       ...input.state,
     },
@@ -649,6 +650,15 @@ export function applyJobPatch(
   }
   if ("sessionKey" in patch) {
     job.sessionKey = normalizeOptionalSessionKey((patch as { sessionKey?: unknown }).sessionKey);
+  }
+  if ("gate" in patch) {
+    if (patch.gate === null || patch.gate === undefined) {
+      job.gate = undefined;
+    } else if (typeof patch.gate === "string" && patch.gate.trim()) {
+      job.gate = patch.gate.trim();
+    } else {
+      job.gate = undefined;
+    }
   }
   assertSupportedJobSpec(job);
   assertMainSessionAgentId(job, opts?.defaultAgentId);

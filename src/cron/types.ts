@@ -143,6 +143,8 @@ export type CronJob = CronJobBase<
   CronDelivery,
   CronFailureAlert | false
 > & {
+  /** Optional shell command gate. Exit 0 = proceed, non-zero = skip job. */
+  gate?: string;
   state: CronJobState;
 };
 
@@ -155,8 +157,12 @@ export type CronJobCreate = Omit<CronJob, "id" | "createdAtMs" | "updatedAtMs" |
   state?: Partial<CronJobState>;
 };
 
-export type CronJobPatch = Partial<Omit<CronJob, "id" | "createdAtMs" | "state" | "payload">> & {
+export type CronJobPatch = Partial<
+  Omit<CronJob, "id" | "createdAtMs" | "state" | "payload" | "gate">
+> & {
   payload?: CronPayloadPatch;
   delivery?: CronDeliveryPatch;
+  /** Set to a command string, or null to remove the gate. */
+  gate?: string | null;
   state?: Partial<CronJobState>;
 };
