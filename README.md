@@ -1,3 +1,18 @@
+> **This is a patched fork of [OpenClaw](https://github.com/openclaw/openclaw).**
+> The `custom` branch tracks a pinned upstream release tag with the following patches applied on top:
+>
+> | Branch                         | Description                                                    |
+> | ------------------------------ | -------------------------------------------------------------- |
+> | `feat/cron-gate`               | Add gate option for deterministic pre-run checks               |
+> | `feat/require-mention-threads` | Require explicit @mention in threads (suppress implicit reply) |
+> | `feat/shared-bootstrap`        | Load `~/.openclaw/SHARED.md` as global prompt for all agents   |
+>
+> **Current base:** see `TAG` in [Makefile](Makefile)
+>
+> **Install:** `git clone <this-repo>`, `git checkout custom`, `make install`
+> **Upgrade to new release:** `make upgrade TAG=v2026.3.14`
+> **Add a patch:** create a topic branch off the current `TAG`, push it, add it to `PATCHES` in the [Makefile](Makefile) and the table above.
+
 # 🦞 OpenClaw — Personal AI Assistant
 
 <p align="center">
