@@ -31,6 +31,7 @@ export const DEFAULT_HEARTBEAT_FILENAME = "HEARTBEAT.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
+export const DEFAULT_SHARED_FILENAME = "SHARED.md";
 const WORKSPACE_STATE_DIRNAME = ".openclaw";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
@@ -138,7 +139,8 @@ export type WorkspaceBootstrapFileName =
   | typeof DEFAULT_HEARTBEAT_FILENAME
   | typeof DEFAULT_BOOTSTRAP_FILENAME
   | typeof DEFAULT_MEMORY_FILENAME
-  | typeof DEFAULT_MEMORY_ALT_FILENAME;
+  | typeof DEFAULT_MEMORY_ALT_FILENAME
+  | typeof DEFAULT_SHARED_FILENAME;
 
 export type WorkspaceBootstrapFile = {
   name: WorkspaceBootstrapFileName;
@@ -176,6 +178,7 @@ const VALID_BOOTSTRAP_NAMES: ReadonlySet<string> = new Set([
   DEFAULT_BOOTSTRAP_FILENAME,
   DEFAULT_MEMORY_FILENAME,
   DEFAULT_MEMORY_ALT_FILENAME,
+  DEFAULT_SHARED_FILENAME,
 ]);
 
 async function writeFileIfMissing(filePath: string, content: string): Promise<boolean> {
@@ -484,6 +487,21 @@ async function resolveMemoryBootstrapEntry(
   return null;
 }
 
+async function loadSharedBootstrapFile(): Promise<WorkspaceBootstrapFile | null> {
+  const home = resolveRequiredHomeDir();
+  const sharedPath = path.join(home, ".openclaw", DEFAULT_SHARED_FILENAME);
+  try {
+    const stat = await fs.stat(sharedPath);
+    if (stat.size > MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES) {
+      return null;
+    }
+    const content = await fs.readFile(sharedPath, "utf-8");
+    return { name: DEFAULT_SHARED_FILENAME, path: sharedPath, content, missing: false };
+  } catch {
+    return null;
+  }
+}
+
 export async function loadWorkspaceBootstrapFiles(dir: string): Promise<WorkspaceBootstrapFile[]> {
   const resolvedDir = resolveUserPath(dir);
 
@@ -527,6 +545,13 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
   }
 
   const result: WorkspaceBootstrapFile[] = [];
+
+  // Load SHARED.md from ~/.openclaw/ (shared across all agents/workspaces)
+  const sharedFile = await loadSharedBootstrapFile();
+  if (sharedFile) {
+    result.push(sharedFile);
+  }
+
   for (const entry of entries) {
     const loaded = await readWorkspaceFileWithGuards({
       filePath: entry.filePath,
@@ -552,6 +577,7 @@ const MINIMAL_BOOTSTRAP_ALLOWLIST = new Set([
   DEFAULT_SOUL_FILENAME,
   DEFAULT_IDENTITY_FILENAME,
   DEFAULT_USER_FILENAME,
+  DEFAULT_SHARED_FILENAME,
 ]);
 
 export function filterBootstrapFilesForSession(
