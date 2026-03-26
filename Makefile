@@ -1,7 +1,7 @@
 UPSTREAM ?= https://github.com/openclaw/openclaw.git
 
 # ── Current upstream release tag ──────────────────────────────────
-TAG ?= v2026.3.13-1
+TAG ?= v2026.3.24
 # ──────────────────────────────────────────────────────────────────
 
 # ── Patch branches (applied in order on top of TAG) ──────────────
