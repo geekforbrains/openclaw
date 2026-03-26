@@ -877,6 +877,7 @@ export const SlackAccountSchema = z
     allowBots: z.boolean().optional(),
     dangerouslyAllowNameMatching: z.boolean().optional(),
     requireMention: z.boolean().optional(),
+    requireMentionInThreads: z.boolean().optional(),
     groupPolicy: GroupPolicySchema.optional(),
     historyLimit: z.number().int().min(0).optional(),
     dmHistoryLimit: z.number().int().min(0).optional(),
